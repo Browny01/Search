@@ -405,6 +405,10 @@ struct SettingsPanel: View {
                     Segmented(options: SidebarPosition.allCases.map { ($0, $0.title) }, selection: $prefs.sidePosition)
                 }
                 Rule()
+                Line("Sidebar tab density", "Roomy gives each row more room to breathe; Compact fits the most tabs") {
+                    Segmented(options: SidebarDensity.allCases.map { ($0, $0.title) }, selection: $prefs.sideDensity)
+                }
+                Rule()
                 Line("Hide the sidebar until the pointer reaches the edge", "The page takes the whole window; push against its \(prefs.sidePosition.rawValue) edge for the tabs. ⌘S keeps them out.") {
                     Switch(on: $prefs.sideHides)
                 }

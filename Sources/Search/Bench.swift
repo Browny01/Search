@@ -615,6 +615,7 @@ final class Bench {
                 "look": browser.prefs.look.rawValue,
                 "sidebar": browser.prefs.sidebar,
                 "sidePosition": browser.prefs.sidePosition.rawValue,
+                "sideDensity": browser.prefs.sideDensity.rawValue,
                 "sideWidth": Double(browser.prefs.sideWidth),
                 "appearance": NSApp.appearance?.name.rawValue ?? "system",
                 "key": NSApp.keyWindow.map { "\(type(of: $0)) “\($0.title)”" } ?? "",
@@ -2321,6 +2322,9 @@ final class Bench {
                     return
                 }
                 browser.prefs.sidePosition = position
+            }
+            if let density = (request["density"] as? String).flatMap(SidebarDensity.init) {
+                browser.prefs.sideDensity = density
             }
             if let on = request["pages120"] as? Bool { browser.prefs.fastPages = on }
             if let on = request["sidebar"] as? Bool { browser.prefs.sidebar = on }

@@ -116,6 +116,11 @@ private struct SplitTabHalf: View {
     private var playing: Bool { !tab.loading && (tab.noisy || tab.muted) }
     private var editing: Bool { browser.editingTab == tab.id }
 
+    /// What a line measures at the density in Settings › Tabs — only for
+    /// the pair stacked in the column; across the top the strip keeps the
+    /// measure it has always had.
+    private var metrics: SidebarTabMetrics { prefs.sideDensity.metrics }
+
     private var laidOut: some View {
         row
             .padding(.leading, stacked ? 10 : 9)
@@ -181,7 +186,7 @@ private struct SplitTabHalf: View {
     }
 
     private var row: some View {
-        HStack(spacing: stacked ? 8 : 5) {
+        HStack(spacing: stacked ? metrics.spacing : 5) {
             titleContent
             Spacer(minLength: 0)
             if !editing {
@@ -199,10 +204,10 @@ private struct SplitTabHalf: View {
             TabAddressField(browser: browser)
                 .frame(height: 16)
         } else {
-            HStack(spacing: stacked ? 8 : 5) {
+            HStack(spacing: stacked ? metrics.spacing : 5) {
                 if prefs.glyph == .icons || narrow {
-                    Mark(icon: tab.icon, letter: tab.monogram, size: stacked ? 15 : 13, dim: tab.asleep)
-                        .frame(width: stacked ? 15 : 13, height: stacked ? 15 : 13)
+                    Mark(icon: tab.icon, letter: tab.monogram, size: stacked ? metrics.iconSize : 13, dim: tab.asleep)
+                        .frame(width: stacked ? metrics.iconSize : 13, height: stacked ? metrics.iconSize : 13)
                 }
                 if tab.shy {
                     Image(systemName: "eye.slash")
@@ -218,7 +223,7 @@ private struct SplitTabHalf: View {
                 }
                 if !narrow {
                     Text(title)
-                        .font(.system(size: stacked ? 12.5 : 12))
+                        .font(.system(size: stacked ? metrics.titleSize : 12))
                         .lineLimit(1)
                         .truncationMode(.tail)
                         .foregroundStyle(focused ? Palette.ink : hovering ? Palette.ink.opacity(0.7) : Palette.muted)

@@ -26,10 +26,16 @@ struct SideBar: View {
 
     @State private var groupFrames: [UUID: CGRect] = [:]
 
-    private static let row: CGFloat = 28
-    private static let gap: CGFloat = 2
     private static let square: CGFloat = 34
     private static let pinGap: CGFloat = 4
+
+    /// What the rows measure at the density in Settings › Tabs (Prefs.swift).
+    /// Every row, drag step and height sum in this column counts in these.
+    /// The pinned squares are sized by the column's width instead, and keep
+    /// their own measure either way.
+    private var metrics: SidebarTabMetrics { prefs.sideDensity.metrics }
+    private var row: CGFloat { metrics.rowHeight }
+    private var gap: CGFloat { metrics.gap }
 
     private var onRight: Bool { prefs.sidePosition == .right }
     private var innerEdge: Alignment { onRight ? .leading : .trailing }
@@ -260,7 +266,7 @@ struct SideBar: View {
                 }
                 .padding(.bottom, 10)
             }
-            VStack(spacing: SideBar.gap) {
+            VStack(spacing: gap) {
                 ForEach(listed) { tab in
                     SideRow(browser: browser, prefs: prefs, tab: tab, live: tab.id == row.active,
                             pill: pill, close: {}, interactive: false)
@@ -288,17 +294,17 @@ struct SideBar: View {
         let pinBlock = pins == 0 ? 0 : (pinCells(pins).map(\.maxY).max() ?? 0) + 10
         let listed = browser.listedPins.count
         let ungrouped = displayed.filter { $0.pin == nil && (!prefs.usesTabGroups || browser.group(of: $0) == nil) }.count
-        let listBlock = CGFloat(listed) * (SideBar.row + SideBar.gap) + (listed > 0 ? SideBar.gap : 0)
-            + (showsLine(listed: listed, loose: ungrouped) ? KeepLine.height + SideBar.gap : 0)
+        let listBlock = CGFloat(listed) * (row + gap) + (listed > 0 ? gap : 0)
+            + (showsLine(listed: listed, loose: ungrouped) ? KeepLine.height + gap : 0)
         let rows = prefs.usesTabGroups
             ? displayed.filter { $0.pin == nil && browser.group(of: $0) == nil }
                 + browser.tabGroups.flatMap { browser.visibleTabs(in: $0) }
             : displayed.filter { $0.pin == nil }
         // A pair is two lines (see SplitTabItem).
         let pairs = rows.filter { browser.split(for: $0) != nil }.count
-        let headings = prefs.usesTabGroups ? CGFloat(browser.tabGroups.count) * (GroupHeading.height + SideBar.gap) : 0
-        let loose = CGFloat(rows.count) * (SideBar.row + SideBar.gap) + CGFloat(pairs) * SideBar.row + headings
-        return Metrics.strip + pinBlock + listBlock + loose + SideBar.row + 8
+        let headings = prefs.usesTabGroups ? CGFloat(browser.tabGroups.count) * (GroupHeading.height + gap) : 0
+        let loose = CGFloat(rows.count) * (row + gap) + CGFloat(pairs) * row + headings
+        return Metrics.strip + pinBlock + listBlock + loose + row + 8
     }
 
     @ViewBuilder
@@ -314,7 +320,7 @@ struct SideBar: View {
         let pair = prefs.splitView ? splits.first(where: { $0.left == tab.id }) : nil
         if let pair, let right = tabs.first(where: { $0.id == pair.right }) {
             SplitTabItem(browser: browser, prefs: prefs, left: tab, right: right,
-                         width: nil, height: SideBar.row,
+                         width: nil, height: row,
                          live: activeID.map { pair.contains($0) } ?? false,
                          focusedID: activeID,
                          interactive: interactive, pill: pill)
@@ -417,24 +423,24 @@ struct SideBar: View {
     private var listed: some View {
         let pins = browser.listedPins
         let squares = browser.squarePins.count
-        return VStack(spacing: SideBar.gap) {
+        return VStack(spacing: gap) {
             ForEach(Array(pins.enumerated()), id: \.element.id) { index, tab in
                 SideRow(browser: browser, prefs: prefs, tab: tab,
                         live: tab.id == browser.activeID, pill: pill,
                         close: { browser.close(tab) })
                     .modifier(Carried(index: index, count: pins.count,
-                                      step: SideBar.row + SideBar.gap, vertical: true,
+                                      step: row + gap, vertical: true,
                                       space: "listed") {
                         browser.moveDisplayedTab(tab, to: $0 + squares)
                     })
             }
         }
         .coordinateSpace(name: "listed")
-        .padding(.bottom, pins.isEmpty ? 0 : SideBar.gap)
+        .padding(.bottom, pins.isEmpty ? 0 : gap)
     }
 
     private var loose: some View {
-        VStack(spacing: SideBar.gap) {
+        VStack(spacing: gap) {
             if prefs.usesTabGroups {
                 ForEach(browser.tabGroups) { group in
                     GroupHeading(browser: browser, group: group, dragSpace: "rows")
@@ -452,7 +458,7 @@ struct SideBar: View {
                 KeepLine(clears: !loose.isEmpty) { browser.clearTabs() }
             }
             ForEach(Array(loose.enumerated()), id: \.element.id) { index, tab in
-                let step = SideBar.row + SideBar.gap
+                let step = row + gap
                 rowItem(tab, tabs: browser.tabs, splits: browser.splits,
                         activeID: browser.activeID, interactive: true, pill: pill,
                         close: { browser.close(tab) })
@@ -482,14 +488,14 @@ struct SideBar: View {
 
     private func groupRows(_ group: TabGroup) -> some View {
         let members = browser.visibleTabs(in: group)
-        return VStack(spacing: SideBar.gap) {
+        return VStack(spacing: gap) {
             ForEach(Array(members.enumerated()), id: \.element.id) { index, tab in
                 rowItem(tab, tabs: browser.tabs, splits: browser.splits,
                         activeID: browser.activeID, interactive: true, pill: pill,
                         close: { browser.close(tab) })
                     .padding(.leading, 14)
                     .modifier(Carried(index: index, count: members.count,
-                                      step: SideBar.row + SideBar.gap, vertical: true,
+                                      step: row + gap, vertical: true,
                                       space: "rows", onDropTab: { source, point in drop(source, at: point) },
                                       outside: { browser.dragOut(tab) }, browser: browser, tab: tab) {
                         browser.move(tab, within: group.id, to: $0)
@@ -512,8 +518,8 @@ struct SideBar: View {
     private static let footHeight: CGFloat = 26 + 10
 
     private var newTab: some View {
-        Quiet(icon: "plus", title: "New tab", height: SideBar.row) { browser.newTab() }
-            .padding(.top, SideBar.gap)
+        Quiet(icon: "plus", title: "New tab", height: row) { browser.newTab() }
+            .padding(.top, gap)
     }
 
     /// One small door at the bottom: the settings.
@@ -642,14 +648,17 @@ private struct SideRow: View {
     /// under the pointer rather than hiding beneath it as the ring does.
     private var speaker: Bool { !tab.loading && (tab.noisy || tab.muted) }
 
+    /// What this row measures, at the density in Settings › Tabs.
+    private var metrics: SidebarTabMetrics { prefs.sideDensity.metrics }
+
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: metrics.spacing) {
             if editing {
                 TabAddressField(browser: browser)
                     .frame(height: 16)
             } else {
                 if prefs.glyph == .icons, !tab.isBlank {
-                    Mark(icon: tab.icon, letter: tab.monogram, size: 15)
+                    Mark(icon: tab.icon, letter: tab.monogram, size: metrics.iconSize)
                 }
                 if tab.bench {
                     // A script's tab, not yours.
@@ -670,7 +679,7 @@ private struct SideRow: View {
                         .help("Recording")
                 }
                 Text(tab.label)
-                    .font(.system(size: 12.5))
+                    .font(.system(size: metrics.titleSize))
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .foregroundStyle(colour)
@@ -695,7 +704,7 @@ private struct SideRow: View {
         }
         .padding(.leading, 10)
         .padding(.trailing, status ? 7 : 10)
-        .frame(height: 28)
+        .frame(height: metrics.rowHeight)
         .frame(maxWidth: .infinity, alignment: .leading)
         // The title keeps its length under the pointer and fades out
         // beneath the cross, rather than being cut shorter, so its end
@@ -728,7 +737,7 @@ private struct SideRow: View {
                 .frame(width: 15, height: 15)
                 .overlay {
                     Color.clear
-                        .frame(width: 30, height: 28)
+                        .frame(width: 30, height: metrics.rowHeight)
                         .contentShape(Rectangle())
                         .onTapGesture { if hovering { close() } }
                 }

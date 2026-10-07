@@ -37,6 +37,53 @@ enum SidebarPosition: String, CaseIterable, Identifiable {
     }
 }
 
+/// How much room each row of the tab column takes: the look the column has
+/// always had, or more air to scan by. Drawn from its metrics below rather
+/// than as a Compact/Roomy test in every view that draws a row.
+enum SidebarDensity: String, CaseIterable, Identifiable {
+    case compact, roomy
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .compact: return "Compact"
+        case .roomy: return "Roomy"
+        }
+    }
+}
+
+/// What one row of the tab column measures at a given density — the values
+/// SideRow and the column's stacked SplitTabItem draw themselves with, and
+/// what the row's drag step and height sums are counted in.
+struct SidebarTabMetrics {
+    /// One row, inside the column.
+    let rowHeight: CGFloat
+    /// Between one row and the next.
+    let gap: CGFloat
+    /// A tab's title.
+    let titleSize: CGFloat
+    /// The site's mark at the row's start.
+    let iconSize: CGFloat
+    /// Between the mark and the title.
+    let spacing: CGFloat
+}
+
+extension SidebarDensity {
+    var metrics: SidebarTabMetrics {
+        switch self {
+        case .compact:
+            // The column as it has always been, to the point.
+            return SidebarTabMetrics(rowHeight: 28, gap: 2, titleSize: 12.5, iconSize: 15, spacing: 8)
+        case .roomy:
+            // The same drawing with more air: a little over a quarter more
+            // height to a row, a point between rows, half a point on the
+            // title, a mark's width more between the mark and it.
+            return SidebarTabMetrics(rowHeight: 36, gap: 3, titleSize: 13, iconSize: 16, spacing: 10)
+        }
+    }
+}
+
 @MainActor
 final class Preferences: ObservableObject {
     private let store = Store.settings
@@ -82,6 +129,10 @@ final class Preferences: ObservableObject {
     /// How wide the column is. Pulled by its edge, and remembered.
     @Published var sideWidth: CGFloat {
         didSet { store.set(Double(sideWidth), forKey: "sidebar.width") }
+    }
+    /// How much room each row of the column takes (see SidebarDensity).
+    @Published var sideDensity: SidebarDensity {
+        didSet { store.set(sideDensity.rawValue, forKey: "sidebar.density") }
     }
     @Published var glyph: Glyph {
         didSet { store.set(glyph.rawValue, forKey: "glyph") }
@@ -376,6 +427,9 @@ final class Preferences: ObservableObject {
         sideHides = store.bool(forKey: "sidebar.hides")
         let width = store.object(forKey: "sidebar.width") as? Double ?? Double(Metrics.side)
         sideWidth = min(Metrics.sideMax, max(Metrics.sideMin, CGFloat(width)))
+        // Anything stored but unknown — an old or made-up value — falls
+        // back to the look the column has always had.
+        sideDensity = store.string(forKey: "sidebar.density").flatMap(SidebarDensity.init) ?? .compact
         glyph = store.string(forKey: "glyph").flatMap(Glyph.init) ?? .letters
         engine = store.string(forKey: "search.engine").flatMap(Engine.init) ?? .standard
         customEngine = store.string(forKey: "search.custom") ?? ""
