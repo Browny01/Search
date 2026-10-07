@@ -412,6 +412,19 @@ struct SettingsPanel: View {
                 Line("Hide the sidebar until the pointer reaches the edge", "The page takes the whole window; push against its \(prefs.sidePosition.rawValue) edge for the tabs. ⌘S keeps them out.") {
                     Switch(on: $prefs.sideHides)
                 }
+                Rule()
+                Line("Sidebar slide speed", "How fast the column comes and goes at the edge, and with ⌘S. Try 2× if the default drags.") {
+                    HStack(spacing: 10) {
+                        Text(String(format: "%.1f×", prefs.sideSlideSpeed))
+                            .font(.system(size: 11.5))
+                            .monospacedDigit()
+                            .foregroundStyle(Palette.ink)
+                            .frame(width: 34, alignment: .trailing)
+                        Slider(value: $prefs.sideSlideSpeed, in: 0.5...2.0)
+                            .tint(Palette.ink)
+                            .frame(width: 130)
+                    }
+                }
             }
             Rule()
             Line("Tabs show", "Beside the title, and on a pinned square") {

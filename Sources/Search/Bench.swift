@@ -616,6 +616,7 @@ final class Bench {
                 "sidebar": browser.prefs.sidebar,
                 "sidePosition": browser.prefs.sidePosition.rawValue,
                 "sideDensity": browser.prefs.sideDensity.rawValue,
+                "sideSlideSpeed": browser.prefs.sideSlideSpeed,
                 "sideWidth": Double(browser.prefs.sideWidth),
                 "appearance": NSApp.appearance?.name.rawValue ?? "system",
                 "key": NSApp.keyWindow.map { "\(type(of: $0)) “\($0.title)”" } ?? "",
@@ -2325,6 +2326,9 @@ final class Bench {
             }
             if let density = (request["density"] as? String).flatMap(SidebarDensity.init) {
                 browser.prefs.sideDensity = density
+            }
+            if let speed = request["slideSpeed"] as? Double {
+                browser.prefs.sideSlideSpeed = min(2.0, max(0.5, speed))
             }
             if let on = request["pages120"] as? Bool { browser.prefs.fastPages = on }
             if let on = request["sidebar"] as? Bool { browser.prefs.sidebar = on }

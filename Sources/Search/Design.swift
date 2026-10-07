@@ -156,8 +156,25 @@ enum Motion {
         NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
     }
 
+    /// The glide's spring at speed 1 — also what Fold.swift counts the
+    /// column's lights in, in Core Animation's terms.
+    static let glideResponse: Double = 0.34
+    static let glideDamping: Double = 0.82
+
     static var glide: Animation? {
-        reduced ? nil : .spring(response: 0.34, dampingFraction: 0.82)
+        reduced ? nil : .spring(response: glideResponse, dampingFraction: glideDamping)
+    }
+
+    /// Glide at a speed of one's own: 1 as it is, 2 twice as fast, 0.5 half.
+    /// The column's slide takes its speed from Settings › Tabs.
+    static func glide(speed: Double) -> Animation? {
+        reduced ? nil : .spring(response: response(at: speed), dampingFraction: glideDamping)
+    }
+
+    /// How long the glide's spring runs at a given speed: shorter the
+    /// faster, and never so short the spring has nothing to settle with.
+    static func response(at speed: Double) -> Double {
+        glideResponse / max(0.25, speed)
     }
 
     static var settle: Animation? {

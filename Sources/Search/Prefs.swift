@@ -134,6 +134,11 @@ final class Preferences: ObservableObject {
     @Published var sideDensity: SidebarDensity {
         didSet { store.set(sideDensity.rawValue, forKey: "sidebar.density") }
     }
+    /// How fast the column slides in and out at the edge: 1 the pace it has
+    /// always had, 2 twice that, 0.5 half (Fold.swift slides on it).
+    @Published var sideSlideSpeed: Double {
+        didSet { store.set(sideSlideSpeed, forKey: "sidebar.slideSpeed") }
+    }
     @Published var glyph: Glyph {
         didSet { store.set(glyph.rawValue, forKey: "glyph") }
     }
@@ -430,6 +435,10 @@ final class Preferences: ObservableObject {
         // Anything stored but unknown — an old or made-up value — falls
         // back to the look the column has always had.
         sideDensity = store.string(forKey: "sidebar.density").flatMap(SidebarDensity.init) ?? .compact
+        // A speed the slider doesn't offer — written by hand, or from a
+        // build that offered others — is brought back into range.
+        let speed = store.object(forKey: "sidebar.slideSpeed") as? Double ?? 1.0
+        sideSlideSpeed = min(2.0, max(0.5, speed))
         glyph = store.string(forKey: "glyph").flatMap(Glyph.init) ?? .letters
         engine = store.string(forKey: "search.engine").flatMap(Engine.init) ?? .standard
         customEngine = store.string(forKey: "search.custom") ?? ""

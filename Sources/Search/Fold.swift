@@ -45,12 +45,12 @@ extension Browser {
     /// ⌘S. The column, or the strip across the top, out of the way, or back.
     func toggleFold() {
         peeking = false
-        withAnimation(Motion.glide) { folded.toggle() }
+        withAnimation(Motion.glide(speed: prefs.sideSlideSpeed)) { folded.toggle() }
     }
 
     /// The folded column out over the page, or back in.
     func peek(_ out: Bool) {
-        withAnimation(Motion.glide) { peeking = out }
+        withAnimation(Motion.glide(speed: prefs.sideSlideSpeed)) { peeking = out }
     }
 }
 
@@ -176,7 +176,7 @@ struct Fold: View {
             resetPending()
             guard prefs.sidebar else { return }
             browser.peeking = false
-            withAnimation(Motion.glide) { browser.folded = hides }
+            withAnimation(Motion.glide(speed: prefs.sideSlideSpeed)) { browser.folded = hides }
         }
         // The address typed into a row is done with, and the pointer went
         // elsewhere while it was: the column goes the way it would have.
@@ -346,9 +346,9 @@ struct Fold: View {
             return
         }
         if prefs.sidebar {
-            Fold.slide(bar, off: lightsOff, by: prefs.sideWidth, right: onRight)
+            Fold.slide(bar, off: lightsOff, by: prefs.sideWidth, right: onRight, speed: prefs.sideSlideSpeed)
         } else {
-            Fold.slide(bar, off: lightsOff, by: Metrics.strip, up: true)
+            Fold.slide(bar, off: lightsOff, by: Metrics.strip, up: true, speed: prefs.sideSlideSpeed)
         }
     }
 
@@ -372,11 +372,11 @@ struct Fold: View {
     /// does. Shown or hidden at once, they stood in their place while the
     /// column was still sliding in under them, and vanished before it had
     /// gone. So they come in from the chosen edge and go back off it, on the
-    /// column's own spring (Motion.glide, in Core Animation's terms) — from
-    /// wherever they are, when the pointer turns back halfway. `up` sends
-    /// the strip's lights off the top edge.
+    /// column's own spring (Motion.glide, in Core Animation's terms) at the
+    /// speed Settings gives it — from wherever they are, when the pointer
+    /// turns back halfway. `up` sends the strip's lights off the top edge.
     static func slide(_ bar: NSView, off: Bool, by width: CGFloat, up: Bool = false,
-                      right: Bool = false) {
+                      right: Bool = false, speed: Double = 1) {
         slides += 1
         let turn = slides
         guard let layer = bar.layer else {
@@ -413,8 +413,9 @@ struct Fold: View {
         }
         let spring = CASpringAnimation(keyPath: path)
         spring.mass = 1
-        spring.stiffness = pow(2 * .pi / 0.34, 2)
-        spring.damping = 4 * .pi * 0.82 / 0.34
+        let response = Motion.response(at: speed)
+        spring.stiffness = pow(2 * .pi / response, 2)
+        spring.damping = 4 * .pi * Motion.glideDamping / response
         spring.fromValue = from
         spring.toValue = to
         spring.duration = spring.settlingDuration
