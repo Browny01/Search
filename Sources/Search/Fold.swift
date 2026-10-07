@@ -82,10 +82,6 @@ struct Fold: View {
     static let fullScreenCorner: CGFloat = 60
     /// The band along the top that is the title bar over the page.
     private static let top: CGFloat = 8
-    /// How long the pointer rests on the edge before a column folded for
-    /// good comes out. Long enough to cross the edge, short enough not to be
-    /// waited for.
-    private static let dwell: TimeInterval = 0.15
 
     var body: some View {
         ZStack(alignment: onRight ? .topTrailing : .topLeading) {
@@ -300,7 +296,7 @@ struct Fold: View {
             peek(true)
         }
         arriving = coming
-        DispatchQueue.main.asyncAfter(deadline: .now() + Fold.dwell, execute: coming)
+        DispatchQueue.main.asyncAfter(deadline: .now() + prefs.sideDwell, execute: coming)
     }
 
     /// The pointer crossed the edge without stopping.

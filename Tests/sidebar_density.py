@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""Settings › Tabs › the sidebar's two settings (Prefs.swift, Side.swift,
+"""Settings › Tabs › the sidebar's settings (Prefs.swift, Side.swift,
 Fold.swift): compact is what an unconfigured browser gets, roomy is drawn at
 once and remembered between launches, a value the build doesn't know is
-compact again — and the slide speed is the usual pace until asked, is
-remembered the same way, and a speed that isn't one is the usual pace again.
+compact again — and the slide speed and the wait at the edge are the usual
+paces until asked, are remembered the same way, and values that aren't
+theirs are the usual paces again.
 
 Build first (`./build.sh`), then `python3 Tests/sidebar_density.py`. It uses
 the split suite's harness: started hidden, no window made or shown,
 everything removed afterwards. What can only be seen — the extra room in a
-roomy row, how fast the column now slides — is checked by hand, against the
-two column pictures this leaves in build/ (density-compact.png,
-density-roomy.png).
+roomy row, how fast the column slides and how long it waits at the edge —
+is checked by hand, against the two column pictures this leaves in build/
+(density-compact.png, density-roomy.png).
 """
 import subprocess
 import sys
@@ -26,6 +27,7 @@ sv.use("sidebar-density")
 t = sv.T()
 DENSITY = "sidebar.density"
 SLIDE = "sidebar.slideSpeed"
+DWELL = "sidebar.dwell"
 ROOT = Path(__file__).resolve().parents[1]
 COMPACT = ROOT / "build" / "density-compact.png"
 ROOMY = ROOT / "build" / "density-roomy.png"
@@ -41,6 +43,12 @@ def store_speed(what, kind):
     subprocess.run(["defaults", "write", sv.SUITE, SLIDE, kind, what], check=True)
 def stored_speed():
     return subprocess.run(["defaults", "read", sv.SUITE, SLIDE], capture_output=True, text=True).stdout.strip()
+def dwell(): return sv.cmd({"do": "probe"})["sideDwell"]
+def ask_dwell(what): sv.cmd({"do": "ui", "dwell": what})
+def store_dwell(what, kind):
+    subprocess.run(["defaults", "write", sv.SUITE, DWELL, kind, what], check=True)
+def stored_dwell():
+    return subprocess.run(["defaults", "read", sv.SUITE, DWELL], capture_output=True, text=True).stdout.strip()
 def column(path): return sv.cmd({"do": "column", "path": str(path), "height": 720})
 def relaunch():
     sv.sp("save"); sv.quit(); sv.launch(); time.sleep(0.5)
@@ -50,6 +58,7 @@ try:
 
     t.ok("nothing stored: Compact, the look everyone has", density() == "compact", density())
     t.ok("nothing stored: the slide is at the usual pace", speed() == 1.0, speed())
+    t.ok("nothing stored: the edge waits the wait it always has", dwell() == 0.15, dwell())
 
     # A few tabs to draw the column with.
     for name in ["alpha", "beta", "gamma"]:
@@ -78,26 +87,31 @@ try:
     time.sleep(0.5)
 
     # Remembered: the app wrote it out, and a new launch reads it back.
-    # The slide speed set alongside it rides the same relaunch.
+    # The slide speed and the wait at the edge ride the same relaunch.
     ask_speed(0.6)
     t.ok("a slower slide asked for: known at once", speed() == 0.6, speed())
+    ask_dwell(0)
+    t.ok("no wait asked for: known at once", dwell() == 0, dwell())
     relaunch()
     t.ok("the choice was written out", stored() == "roomy", stored())
     t.ok("and a new launch reads it back", density() == "roomy", density())
     t.ok("the slower slide was written out too", stored_speed().startswith("0.6"), stored_speed())
     t.ok("and a new launch slides at it", speed() == 0.6, speed())
+    t.ok("no wait was written out too", float(stored_dwell()) == 0, stored_dwell())
+    t.ok("and a new launch waits it", dwell() == 0, dwell())
 
     # Back to Compact the same way.
     ask("compact")
     t.ok("Compact asked for: known at once", density() == "compact", density())
 
     # A value this build doesn't know falls back to Compact rather than
-    # drawing something odd; a speed that isn't one falls back to the pace
-    # everyone gets.
-    store("enormous"); store_speed("sideways", "-string")
+    # drawing something odd; a speed or wait that isn't one falls back to
+    # the pace everyone gets.
+    store("enormous"); store_speed("sideways", "-string"); store_dwell("later", "-string")
     sv.quit(); sv.launch(); time.sleep(0.5)
     t.ok("a value this build doesn't know is Compact again", density() == "compact", density())
     t.ok("a speed that isn't one is the usual pace again", speed() == 1.0, speed())
+    t.ok("a wait that isn't one is the usual wait again", dwell() == 0.15, dwell())
 finally:
     t.done(); sv.finish()
 sys.exit(1 if t.failed else 0)

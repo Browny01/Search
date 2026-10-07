@@ -425,6 +425,19 @@ struct SettingsPanel: View {
                             .frame(width: 130)
                     }
                 }
+                Rule()
+                Line("Wait before the sidebar shows", "How long the pointer must rest at the edge before the hidden column comes out. At 0, the moment it's touched.") {
+                    HStack(spacing: 10) {
+                        Text(String(format: "%.2f s", prefs.sideDwell))
+                            .font(.system(size: 11.5))
+                            .monospacedDigit()
+                            .foregroundStyle(Palette.ink)
+                            .frame(width: 44, alignment: .trailing)
+                        Slider(value: $prefs.sideDwell, in: 0...0.45, step: 0.05)
+                            .tint(Palette.ink)
+                            .frame(width: 130)
+                    }
+                }
             }
             Rule()
             Line("Tabs show", "Beside the title, and on a pinned square") {

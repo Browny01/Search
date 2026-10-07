@@ -139,6 +139,13 @@ final class Preferences: ObservableObject {
     @Published var sideSlideSpeed: Double {
         didSet { store.set(sideSlideSpeed, forKey: "sidebar.slideSpeed") }
     }
+    /// How long the pointer must rest at the edge before the hidden column
+    /// comes out: 0.15 the wait it has always had, 0 at once (Fold.swift
+    /// counts it). Long enough to cross the edge without summoning the
+    /// column, short enough not to be waited for.
+    @Published var sideDwell: Double {
+        didSet { store.set(sideDwell, forKey: "sidebar.dwell") }
+    }
     @Published var glyph: Glyph {
         didSet { store.set(glyph.rawValue, forKey: "glyph") }
     }
@@ -439,6 +446,9 @@ final class Preferences: ObservableObject {
         // build that offered others — is brought back into range.
         let speed = store.object(forKey: "sidebar.slideSpeed") as? Double ?? 1.0
         sideSlideSpeed = min(2.0, max(0.5, speed))
+        // The same for the wait at the edge.
+        let dwell = store.object(forKey: "sidebar.dwell") as? Double ?? 0.15
+        sideDwell = min(0.45, max(0, dwell))
         glyph = store.string(forKey: "glyph").flatMap(Glyph.init) ?? .letters
         engine = store.string(forKey: "search.engine").flatMap(Engine.init) ?? .standard
         customEngine = store.string(forKey: "search.custom") ?? ""
